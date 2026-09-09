@@ -7,6 +7,7 @@ use App\Http\Requests\StoreTicketRequest;
 use App\Http\Requests\UpdateTicketRequest;
 use App\Http\Resources\TicketResource;
 use App\Models\Ticket;
+use App\Jobs\ClassifyTicketJob;
 use Illuminate\Http\Request;
 
 class TicketController extends Controller
@@ -30,18 +31,18 @@ class TicketController extends Controller
         return TicketResource::collection($tickets);
     }
 
-    public function store(StoreTicketRequest $request)
-    {
-        $ticket = Ticket::create([
-            ...$request->validated(),
-            'customer_id' => $request->user()->id,
-            'status' => 'open',
-        ]);
+ public function store(StoreTicketRequest $request)
+{
+    $ticket = Ticket::create([
+        ...$request->validated(),
+        'customer_id' => $request->user()->id,
+        'status' => 'open',
+    ]);
 
-        // AI classification job dispatched here — built in Step 5
+    ClassifyTicketJob::dispatch($ticket);
 
-        return new TicketResource($ticket->load(['category', 'customer']));
-    }
+    return new TicketResource($ticket->load(['category', 'customer']));
+}
 
     public function show(Request $request, Ticket $ticket)
     {
